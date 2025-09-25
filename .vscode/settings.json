@@ -7,7 +7,7 @@
             "port": 5432,
             "driver": "PostgreSQL",
             "name": "pg local",
-            "database": "test",
+            "database": "postgres",
             "username": "postgres"
         }
     ]
