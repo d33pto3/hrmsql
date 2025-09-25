@@ -1,0 +1,1 @@
+SELECT category_id FROM products;
