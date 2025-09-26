@@ -21,3 +21,17 @@
 9. Find the total revenue per product (quantity × price).
 
 10. Find the category with the highest number of products.
+
+### Section 3: Joins & Subqueries
+
+11. List all products ordered by customer 'Alice'.
+
+12. Find all customers who never placed an order.
+
+13. Retrieve all orders along with total order value.
+
+14. Find products that appear in more than 3 orders.
+
+15. List customers who ordered all products from category_id = 2.
+
+### Section 4: Advanced Queries
