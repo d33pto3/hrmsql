@@ -7,6 +7,16 @@
             "port": 5432,
             "driver": "PostgreSQL",
             "name": "pg local",
+            "database": "test",
+            "username": "postgres"
+        },
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "pg msi linux",
             "database": "postgres",
             "username": "postgres"
         }

@@ -30,7 +30,7 @@
 
 13. Retrieve all orders along with total order value.
 
-14. Find products that appear in more than 3 orders.
+14. Find products that appear in more than 20 orders.
 
 15. List customers who ordered all products from category_id = 2.
 

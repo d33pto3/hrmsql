@@ -130,3 +130,52 @@ WHERE customer_id NOT IN (
     SELECT DISTINCT customer_id FROM orders
 );
 ```
+
+13. Retrieve all orders along with total order value.
+
+```
+--- Using Joining
+SELECT
+    o.order_id,
+    SUM(od.quantity * p.price) AS total_order_value
+FROM order_details AS od
+LEFT JOIN orders AS o
+    ON o.order_id = od.order_id
+LEFT JOIN products as p
+    ON od.product_id = p.product_id
+GROUP BY o.order_id
+ORDER BY o.order_id;
+
+--- Using Subquery + Joining (At least one join nedded)
+SELECT
+    od.order_id,
+    SUM(newt.price * od.quantity) AS total_order_value
+FROM order_details AS od
+LEFT JOIN (
+    SELECT product_id, price
+    FROM products
+    WHERE product_id IN
+        ( SELECT product_id FROM order_details)
+) AS newt
+ON newt.product_id = od.product_id
+GROUP BY order_id
+ORDER BY order_id;
+
+```
+
+14. Find products that appear in more than 20 orders.
+
+```
+SELECT p.product_name, od.product_id, COUNT(od.product_id) AS cnt FROM order_details AS od
+LEFT JOIN products AS p
+ON p.product_id = od.product_id
+GROUP BY p.product_name, od.product_id
+HAVING COUNT(od.product_id) > 20
+ORDER BY cnt;
+```
+
+15. List customers who ordered all products from categroy_id = 2
+
+```
+
+```
