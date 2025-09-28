@@ -42,6 +42,8 @@ AND
 unit ILIKE '%kg%';
 ```
 
+### Section 2: Aggregates & Grouping
+
 6.
 
 ```
@@ -83,6 +85,8 @@ SELECT category_id, count FROM
     ORDER BY count desc)
 LIMIT 1;
 ```
+
+### Section 3: Joins & Subqueries
 
 11.
 
@@ -193,3 +197,111 @@ HAVING COUNT(DISTINCT p.product_id) >= (
 )
 ORDER BY c.customer_id;
 ```
+
+### Section 4: Advanced Queries
+
+16. Find the second most expensive product
+
+```
+SELECT price
+FROM products
+ORDER BY price DESC
+LIMIT 1 OFFSET 1;
+```
+
+17. Get the latest order for each customer.
+
+```
+SELECT
+    o.customer_id,
+    c.customer_name,
+    MAX(o.order_date)
+FROM orders o
+LEFT JOIN customers c
+    ON c.customer_id = o.customer_id
+GROUP BY o.customer_id, c.customer_name
+ORDER BY o.customer_id;
+```
+
+18. List products whose price is higher than at least 50% of other products.
+
+```
+-- Using window function
+SELECT *
+FROM (
+    SELECT *, NTILE(2) OVER (ORDER BY price) AS half
+    FROM products
+) AS t
+WHERE half = 2;
+
+
+-- Using a subquery for median price
+SELECT *
+FROM products
+WHERE price > (
+    SELECT PERCENTILE_CONT(0.5)
+    WITHIN GROUP (ORDER BY price)
+    FROM products
+)
+ORDER BY price DESC;
+
+
+-- Using Subquery with Limit
+SELECT *
+FROM products
+ORDER BY price DESC
+LIMIT (
+    SELECT COUNT(*)
+    FROM products
+) / 2;
+```
+
+19. Find customers whose total order quantity exceeds 100 units.
+
+```
+SELECT
+    o.customer_id,
+    SUM(od.quantity) AS sum
+FROM orders o
+LEFT JOIN order_details od
+    ON o.order_id = od.order_id
+GROUP BY o.customer_id
+HAVING SUM(od.quantity) > 100
+ORDER BY o.customer_id;
+```
+
+### Section 5: Views, Indexes & Sequences
+
+21. Create a view showing customer_name, total_orders, total_spent.
+
+22. Create an index on orders(order_date) and explain how it improves performance.
+
+23. Create a sequence for order_detail_id and use it in an insert statement.
+
+24. Drop a view named vw_customer_summary.
+
+25. Explain the difference between B-Tree and Hash indexes with examples.
+
+### Section 6: Functions & Procedures
+
+26. Write a function that calculates discounted price given product_id and discount %.
+
+27. Write a procedure that archives orders older than 2024-01-01 into another table.
+
+28. Create a function to return the number of orders per customer.
+
+29. Explain the difference between a function and procedure in PostgreSQL.
+
+30. Write a function to check if a product exists in orders (return true/false).
+
+### Section 7: Transactions & Concurrency
+
+31. Write a transaction to transfer 100 units from one product stock to another, ensuring atomicity.
+
+32. Demonstrate rollback if the transfer cannot be completed.
+
+33. Explain isolation levels and give an example of phantom read.
+
+34. Using SAVEPOINT, partially rollback a transaction updating two orders.
+
+35. Explain how MVCC works in PostgreSQL.
