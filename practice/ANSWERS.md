@@ -309,13 +309,164 @@ WHERE od.product_id IS NULL;
 
 21. Create a view showing customer_name, total_orders, total_spent.
 
+```
+CREATE VIEW
+customer_orders
+AS
+SELECT
+    c.customer_name,
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    SUM(od.quantity) AS total_product_purchased,
+    SUM(od.quantity * p.price) AS total_spent
+FROM customers c
+LEFT JOIN orders o
+    ON c.customer_id = o.customer_id
+LEFT JOIN order_details od
+    ON o.order_id = od.order_id
+LEFT JOIN products p
+    ON p.product_id = od.product_id
+GROUP BY c.customer_id, c.customer_name
+ORDER BY c.customer_id;
+
+```
+
 22. Create an index on orders(order_date) and explain how it improves performance.
+
+```
+CREATE INDEX idx_orders_order_date
+ON orders(order_date);
+```
+
+- An index is like a "lookup table" that the db builds to speed up searches
+- Internally RDBMS implement indexes using a B-tree.
+- W/o the index
+  - The db must scan the entire order table (sequential scan)
+- With the index
+  - The db looks into the B-tree index on order_date
+  - It jumps directly to rows matching date or range
+  - Sorting by order_date also becomes faster because the index is already ordered
 
 23. Create a sequence for order_detail_id and use it in an insert statement.
 
+```
+CREATE SEQUENCE order_detail_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE order_id_seq
+    START WITH 10000
+    INCREMENT BY 1
+    MINVALUE 10000
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE TABLE order_details_dup (
+    order_detail_id INT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL
+);
+
+INSERT INTO order_details_dup
+(
+    order_detail_id,
+    order_id,
+    product_id,
+    quantity
+) VALUES (
+    nextval('order_detail_id_seq'),
+    nextval('order_id_seq'),
+    201,
+    10
+);
+
+SELECT * FROM order_details_dup;
+```
+
 24. Drop a view named vw_customer_summary.
 
+```
+DROP VIEW IF EXISTS vw_customer_summary; --- If exists
+
+DROP VIEW vw_customer_summary CASCADE; --- If the VIEW is dependent on by other objects (like another VIEW) [good for dev/testing, but risky in prod]
+
+DROP VIEW vw_customer_summary RESTRICT; --- If we want accidental drop of dependent objects
+```
+
 25. Explain the difference between B-Tree and Hash indexes with examples.
+
+**B-TREE**
+
+- B-tree is the default index type in most RDBMS.
+- Store the data in sorted, hierarchical tree structure.
+- Efficient for range queries, equality and sorting.
+
+**How it works?**
+
+- Each node stores key values and pointers to child nodes.
+- Search is like binary search in a tree.
+
+example scenario: Table: orders(order_id, customer_id, order_date, total_amount);
+
+Create B-tree index:
+
+```
+CREATE INDEX idx_orders_order_date
+ON orders(order_date);
+```
+
+Queries that benefit:
+
+1. Equality check:
+
+```
+SELECT * FROM orders WHERE order_date = '2025-09-01';
+```
+
+2. Range Query:
+
+```
+SELECT * FROM orders WHERE order_date BETWEEN '2025-01-01' AND '2025-09-01';
+```
+
+3. ORDER BY:
+
+```
+SELECT * FROM orders ORDER BY order_date DESC LIMIT 10;
+```
+
+**Hash Index**
+
+- Hash index stores data in a hash table (key->bucket).
+- Very fast for equality searches (=) but not suitable for range queries (<, >, BETWEEN).
+
+**How it works**
+
+- The index computes a hash value for each key and stores it back in a bucket.
+- Searching involves computing the hash and directly looking in the corresponding bucket.
+
+Example scenario: Table: customers(customer_id, customer_name)
+
+Create Hash index:
+
+```
+CREATE INDEX idx_customers_name_hash
+ON customers USING HASH (customer_name);
+```
+
+Queries that benefit:
+
+```
+SELECT * FROM customers WHERE customer_name = 'Alice';
+```
+
+**_Practical_**:
+
+- Use B-tree for almost all cases - range queries, ordering, equality checks;
+- Use hash index for very frequent equality searches in a column.
 
 ### Section 6: Functions & Procedures
 

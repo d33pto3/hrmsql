@@ -50,92 +50,11 @@
 
 21. Create a view showing customer_name, total_orders, total_spent.
 
-```
-CREATE VIEW
-customer_orders
-AS
-SELECT
-    c.customer_name,
-    COUNT(DISTINCT o.order_id) AS total_orders,
-    SUM(od.quantity) AS total_product_purchased,
-    SUM(od.quantity * p.price) AS total_spent
-FROM customers c
-LEFT JOIN orders o
-    ON c.customer_id = o.customer_id
-LEFT JOIN order_details od
-    ON o.order_id = od.order_id
-LEFT JOIN products p
-    ON p.product_id = od.product_id
-GROUP BY c.customer_id, c.customer_name
-ORDER BY c.customer_id;
-
-```
-
 22. Create an index on orders(order_date) and explain how it improves performance.
-
-```
-CREATE INDEX idx_orders_order_date
-ON orders(order_date);
-```
-
-- An index is like a "lookup table" that the db builds to speed up searches
-- Internally RDBMS implement indexes using a B-tree.
-- W/o the index
-  - The db must scan the entire order table (sequential scan)
-- With the index
-  - The db looks into the B-tree index on order_date
-  - It jumps directly to rows matching date or range
-  - Sorting by order_date also becomes faster because the index is already ordered
 
 23. Create a sequence for order_detail_id and use it in an insert statement.
 
-```
-CREATE SEQUENCE order_detail_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    MINVALUE 1
-    NO MAXVALUE
-    CACHE 1;
-
-CREATE SEQUENCE order_id_seq
-    START WITH 10000
-    INCREMENT BY 1
-    MINVALUE 10000
-    NO MAXVALUE
-    CACHE 1;
-
-CREATE TABLE order_details_dup (
-    order_detail_id INT PRIMARY KEY,
-    order_id INT NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT NOT NULL
-);
-
-INSERT INTO order_details_dup
-(
-    order_detail_id,
-    order_id,
-    product_id,
-    quantity
-) VALUES (
-    nextval('order_detail_id_seq'),
-    nextval('order_id_seq'),
-    201,
-    10
-);
-
-SELECT * FROM order_details_dup;
-```
-
 24. Drop a view named vw_customer_summary.
-
-```
-DROP VIEW IF EXISTS vw_customer_summary; --- If exists
-
-DROP VIEW vw_customer_summary CASCADE; --- If the VIEW is dependent on by other objects (like another VIEW) [good for dev/testing, but risky in prod]
-
-DROP VIEW vw_customer_summary RESTRICT; --- If we want accidental drop of dependent objects
-```
 
 25. Explain the difference between B-Tree and Hash indexes with examples.
 
