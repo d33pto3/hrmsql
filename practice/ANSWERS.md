@@ -470,9 +470,104 @@ SELECT * FROM customers WHERE customer_name = 'Alice';
 
 ### Section 6: Functions & Procedures
 
+**Where is a PostgreSQL function stored?**
+
+- When we create a function in PostgreSQL (using CREATE FUNCTION), the function definition is stored in PostgreSQL’s system catalog tables.
+
+- Specifically, functions are stored in the table pg_proc (procedure/function metadata).
+
+- Any SQL or procedural language (PL/pgSQL, PL/Python, PL/Perl, etc.) function we write is compiled/interpreted and stored in the database itself, not in a file on disk like in traditional programming.
+
+**How is a function executed?**
+
+- When we call the function (e.g., SELECT my_function(123); or CALL my_procedure();), PostgreSQL’s executor looks up the function definition from pg_proc.
+
+- If it’s a SQL function → it substitutes and runs the SQL statements defined inside.
+
+- If it’s a PL/pgSQL function → it runs inside PostgreSQL’s built-in PL/pgSQL interpreter.
+
+- If it’s an extension language function (like PL/Python) → PostgreSQL hands control over to that language’s interpreter, which is integrated with PostgreSQL.
+
 26. Write a function that calculates discounted price given product_id and discount %.
 
-27. Write a procedure that archives orders older than 2024-01-01 into another table.
+```
+CREATE OR REPLACE FUNCTION calculate_discount(id INT, percent REAL)
+RETURNS REAL
+LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    original_price REAL;
+    discounted_price REAL;
+BEGIN
+    SELECT price
+    INTO original_price
+    FROM products
+    WHERE product_id = id;
+
+    discounted_price := original_price - (original_price * percent / 100);
+
+    RETURN discounted_price;
+END;
+$$;
+
+SELECT  calculate_discount(1, 10);
+
+SELECT
+    p.product_id,
+    p.product_name,
+    p.price,
+    calculate_discount(p.product_id, 25) AS discounted_price
+FROM products p;
+
+--- TO DROP: DROP FUNCTION IF EXISTS calculate_discount(INT, REAL);
+```
+
+Self Returning function
+
+```
+CREATE OR REPLACE FUNCTION get_all_discounts(percent NUMERIC)
+RETURNS TABLE (
+    product_id INT,
+    original_price NUMERIC,
+    discounted_price NUMERIC
+)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.product_id,
+        p.price,
+        ROUND(p.price - (p.price * percent / 100), 2)
+    FROM products p;
+END;
+$$;
+```
+
+27. Write a procedure that archives orders older than 2022-01-01 into another table.
+
+```
+CREATE OR REPLACE PROCEDURE archive_orders(date DATE)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- 1. Insert old orders into archive table (VALUES keyword omitted here)
+    INSERT INTO orders_archive_past_2024 (order_id, customer_id, order_date)
+    SELECT
+            o.order_id,
+            o.customer_id,
+            o.order_date
+    FROM orders o
+    WHERE order_date < date;
+END;
+
+    -- 2. Delete from the orders table
+    -- DELETE FROM orders
+    -- WHERE order_date < date;
+$$;
+```
 
 28. Create a function to return the number of orders per customer.
 
@@ -491,3 +586,11 @@ SELECT * FROM customers WHERE customer_name = 'Alice';
 34. Using SAVEPOINT, partially rollback a transaction updating two orders.
 
 35. Explain how MVCC works in PostgreSQL.
+
+### SECTION 8: Extras
+
+36. Delete duplicates from order table.
+
+```
+
+```
