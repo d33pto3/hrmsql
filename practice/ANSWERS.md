@@ -571,7 +571,80 @@ $$;
 
 28. Create a function to return the number of orders per customer.
 
+```
+-- Using language plpgsql
+CREATE OR REPLACE FUNCTION get_number_of_orders(p_customer_id INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    order_count INTEGER;
+BEGIN
+    SELECT COUNT(o.order_id)
+    INTO order_count
+    FROM orders o
+    WHERE o.customer_id = p_customer_id;
+
+    RETURN order_count;
+END;
+$$;
+
+-- Using sql (don't need 'semicolon(;)' or BEGIN-END syntax)
+CREATE OR REPLACE FUNCTION get_number_of_orders(p_customer_id INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    SELECT COUNT(*)
+    FROM orders o
+    WHERE o.customer_id = p_customer_id;
+END;
+$$;
+
+SELECT
+    o.customer_id,
+    get_number_of_orders(o.customer_id) AS orders
+FROM orders o
+GROUP BY o.customer_id,
+ORDER BY o.customer_id;
+
+-- Return table
+CREATE OR REPLACE FUNCTION get_order_per_customer_table()
+RETURNS TABLE(
+    customer_id INT,
+    order_count INT
+)
+LANGUAGE sql
+AS
+$$
+    SELECT customer_id, COUNT(*)
+    FROM orders
+    GROUP BY customer_id
+$$;
+
+SELECT * FROM get_order_per_customer_table();
+```
+
 29. Explain the difference between a function and procedure in PostgreSQL.
+
+**Function in postgresql**
+
+- Return a value (scalar, record or table)
+- Can be used inside SQL queries
+- Are meant for computations or query encapsulation
+- Can be written in SQL, PL/pgSQL, or other supported languages.
+- Must have a return clause.
+- Use in queries: SELECT fn()
+
+**Procedures in postgresql**
+
+- Do not return values directly (but can modify data, call other procedures, or return via OUT parameters/cursors)
+- Cannot be used inside SQL queries (we must call them with call)
+- Are meant for actions (side-effects) like inserts, updates, deletes, archives, batch jobs.
+- Introduced in PostgreSQL 11.
+- Use in queries: CALL proc()
 
 30. Write a function to check if a product exists in orders (return true/false).
 
