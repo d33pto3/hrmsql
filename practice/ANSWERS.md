@@ -652,9 +652,52 @@ SELECT * FROM get_order_per_customer_table();
 
 31. Write a transaction to transfer 100 units from one product stock to another, ensuring atomicity.
 
+```
+START TRANSACTION;
+
+UPDATE testproducts t
+SET stock = t.stock - 20
+WHERE t.testproduct_id = 1;
+
+UPDATE testproducts t
+SET stock = t.stock + 20
+WHERE t.testproduct_id = 2;
+
+-- COMMIT ONCE SURE. ONCE COMMITED CANNOT BE ROLLBACKED.
+COMMIT;
+
+-- ROLLBACK TO UNDO
+ROLLBACK;
+```
+
 32. Demonstrate rollback if the transfer cannot be completed.
 
+```
+-- Begin transaction
+START TRANSACTION;
+
+-- Step 1: Deduct 100 units from Product A
+UPDATE testproducts
+SET stock = stock - 100
+WHERE product_id = 1;
+
+-- Step 2: Check if Product A has gone negative
+-- (simulate validation)
+SELECT stock FROM testproducts WHERE product_id = 1;
+-- Suppose it now shows -50 ❌
+
+-- Step 3: Since stock < 0, rollback the transaction
+ROLLBACK;
+
+-- Step 4: Verify that no changes were made
+SELECT * FROM testproducts;
+```
+
 33. Explain isolation levels and give an example of phantom read.
+
+```
+
+```
 
 34. Using SAVEPOINT, partially rollback a transaction updating two orders.
 
