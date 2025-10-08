@@ -81,3 +81,15 @@
 34. Using SAVEPOINT, partially rollback a transaction updating two orders.
 
 35. Explain how MVCC works in PostgreSQL.
+
+### Section 8: Constraints & Data Integrity
+
+36. Add a foreign key constraint from products.category_id → categories.category_id.
+
+37. Add a unique constraint on customers(contact_name, city).
+
+38. Modify the orders table to disallow NULL customer_id.
+
+39. Add a CHECK constraint that product price > 0.
+
+40. Explain how deferred constraints work with an example

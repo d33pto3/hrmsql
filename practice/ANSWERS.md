@@ -695,17 +695,140 @@ SELECT * FROM testproducts;
 
 33. Explain isolation levels and give an example of phantom read.
 
-```
+Isolation levels control how visible the changes of one transaction are to other concurrent tarnsactions. They balance data consistency vs concurrent performance.
+
+| Isolation Level  | Description                                          | Can See Changes from Other Transactions?                | Notes                                                         |
+| ---------------- | ---------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
+| READ UNCOMMITTED | Reads even uncommitted changes (dirty reads)         | Yes                                                     | PostgreSQL treats this as READ COMMITTED internally           |
+| READ COMMITTED   | Default                                              | Sees only committed data at the start of each statement | Non-repeatable reads and phantom reads possible               |
+| REPEATABLE READ  | All statements see the same snapshot of data         | Only committed data as of transaction start             | Prevents non-repeatable reads, phantom reads may occur        |
+| SERIALIZABLE     | Transactions behave as if executed one after another | No uncommitted or new rows appear                       | Prevents dirty reads, non-repeatable reads, and phantom reads |
+
+**Phanthom Reads**
+
+A transaction re-executes a query and sees new rows added or deleted by another commited transaction.
+
+Example Scenario
+
+Suppose we have a _products_ table
+|id|name|stock|
+|---|---|-----|
+|1|Product A|50|
+|2|Product B|20|
+
+Step 1: Transaction 1 starts
 
 ```
+-- Transaction 1
+START TRANSACTION ISOLATION LEVEL REPETABLE READ;
+
+SELECT * FROM products WHERE stock >= 20;
+-- Result: Product A (50), Product B (20)
+```
+
+STEP 2: Transaction 2 instert a new row
+
+```
+START TRANSACTION;
+INSERT INTO products (id, name, stock) VALUES (3, 'Product C', 30);
+COMMIT;
+```
+
+STEP 3: Transaction 1 queries again
+
+```
+SELECT * FROM products WHERE stock >= 20;
+-- Result: Product A (50), Product B (20), Product C (30)
+```
+
+New row, "Product C" appears - this is phanthom read.
+
+How Isolation Levels affect Phanthom reads
+
+| Level           | Phanthom Read?                                                      |
+| --------------- | ------------------------------------------------------------------- |
+| READ COMMITTED  | ✅ Yes                                                              |
+| REPEATABLE READ | ✅ Yes (snapshot prevents old row changes, but new rows may appear) |
+| SERIALIZABLE    | ❌ No                                                               |
+
+SERIALIZABLE ensures transactions behave as if executed one after another — no phantom rows ever appear.
+
+🔹 Key Takeaways
+
+- Isolation levels control how transactions see each other’s changes.
+
+- Phantom reads happen when new rows appear or disappear between queries inside the same transaction.
+
+- SERIALIZABLE is the only level that completely prevents phantom reads.
+
+🔹 Why Isolation Levels Matter in Real Life?
+
+Databases often handle many users or processes at the same time.
+Without proper isolation, data can get corrupted or inconsistent, which can cause real-world problems.
+
+1️⃣ Banking / Financial Transactions
+
+**Scenario**: Two people transfer money from the same account at the same time.
+
+**Problem**: Without isolation, the account balance might be overdrawn or incorrectly updated.
+
+**Solution**:
+
+Use REPEATABLE READ or SERIALIZABLE to prevent lost updates or phantom reads.
+
+Guarantees that your balance calculations are accurate.
+
+2️⃣ E-commerce / Inventory Management
+
+**Scenario**: Two users buy the last item of a product at the same time.
+
+**Problem**: Stock might go negative, or multiple users “buy” the same item.
+
+**Solution**:
+
+Transactions + proper isolation (e.g., SERIALIZABLE) prevent overselling.
+
+Phantom reads can occur if new rows are inserted (like a new product appearing during a promotion).
+
+3️⃣ Reporting / Analytics
+
+**Scenario**: Running a long sales report while sales data is being updated.
+
+**Problem**: Non-repeatable reads or phantom rows can make reports inconsistent.
+
+**Solution**:
+
+Use REPEATABLE READ to get a consistent snapshot of the data for the entire report.
+
+4️⃣ Booking Systems (Hotels, Flights, Events)
+
+Scenario: Two customers try to book the same seat or room at the same time.
+
+Problem: Double booking can happen without proper isolation.
+
+Solution:
+
+SERIALIZABLE isolation ensures only one booking succeeds; the other gets a rollback or retry.
 
 34. Using SAVEPOINT, partially rollback a transaction updating two orders.
 
 35. Explain how MVCC works in PostgreSQL.
 
-### SECTION 8: Extras
+### Section 8: Constraints & Data Integrity
 
-36. Delete duplicates from order table.
+36. Add a foreign key constraint from products.category_id → categories.category_id.
+
+37. Add a unique constraint on customers(contact_name, city).
+
+38. Modify the orders table to disallow NULL customer_id.
+
+39. Add a CHECK constraint that product price > 0.
+
+40. Explain how deferred constraints work with an example
+
+### SECTION 9: Extras
+
+41. Delete duplicates from order table.
 
 ```
 
