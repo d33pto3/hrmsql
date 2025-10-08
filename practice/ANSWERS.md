@@ -802,11 +802,11 @@ Use REPEATABLE READ to get a consistent snapshot of the data for the entire repo
 
 4️⃣ Booking Systems (Hotels, Flights, Events)
 
-Scenario: Two customers try to book the same seat or room at the same time.
+**Scenario**: Two customers try to book the same seat or room at the same time.
 
-Problem: Double booking can happen without proper isolation.
+**Problem**: Double booking can happen without proper isolation.
 
-Solution:
+**Solution**:
 
 SERIALIZABLE isolation ensures only one booking succeeds; the other gets a rollback or retry.
 
