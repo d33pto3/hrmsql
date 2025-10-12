@@ -774,9 +774,9 @@ Without proper isolation, data can get corrupted or inconsistent, which can caus
 
 **Solution**:
 
-Use REPEATABLE READ or SERIALIZABLE to prevent lost updates or phantom reads.
+- Use REPEATABLE READ or SERIALIZABLE to prevent lost updates or phantom reads.
 
-Guarantees that your balance calculations are accurate.
+- Guarantees that your balance calculations are accurate.
 
 2️⃣ E-commerce / Inventory Management
 
@@ -786,9 +786,9 @@ Guarantees that your balance calculations are accurate.
 
 **Solution**:
 
-Transactions + proper isolation (e.g., SERIALIZABLE) prevent overselling.
+- Transactions + proper isolation (e.g., SERIALIZABLE) prevent overselling.
 
-Phantom reads can occur if new rows are inserted (like a new product appearing during a promotion).
+- Phantom reads can occur if new rows are inserted (like a new product appearing during a promotion).
 
 3️⃣ Reporting / Analytics
 
@@ -798,7 +798,7 @@ Phantom reads can occur if new rows are inserted (like a new product appearing d
 
 **Solution**:
 
-Use REPEATABLE READ to get a consistent snapshot of the data for the entire report.
+- Use REPEATABLE READ to get a consistent snapshot of the data for the entire report.
 
 4️⃣ Booking Systems (Hotels, Flights, Events)
 
@@ -812,7 +812,153 @@ SERIALIZABLE isolation ensures only one booking succeeds; the other gets a rollb
 
 34. Using SAVEPOINT, partially rollback a transaction updating two orders.
 
+```
+CREATE TABLE torders (
+  id SERIAL PRIMARY KEY,
+  customer_id INT,
+  amount NUMERIC
+);
+```
+
+```
+INSERT INTO torders (customer_id, amount)
+VALUES (1, 200), (2, 300);
+```
+
+```
+BEGIN;
+
+-- Step 1: Update first order
+UPDATE torders SET amount = amount + 50 WHERE id = 1;
+
+-- Create a savepoint (like a checkpoint)
+SAVEPOINT before_second_update;
+
+-- Step 2: Try updating second order (suppose this fails)
+UPDATE torders SET amount = amount / 0 WHERE id = 2; -- ❌ Division by zero error
+
+-- If error occurs, rollback only to the savepoint
+ROLLBACK TO SAVEPOINT before_second_update;
+
+-- Continue safely after rollback
+UPDATE torders SET amount = amount + 20 WHERE id = 2;
+
+-- Commit the successful changes
+COMMIT;
+```
+
 35. Explain how MVCC works in PostgreSQL.
+
+MVCC = Multi-Version Concurrency Control
+
+IT means PostgreSQL keeps multiple versions of a row in the database, so:
+
+- Readers don't block writers and
+- Writers don't block readers.
+
+Each transaction sees a snapshot of the database as it existed when it started, even if other transactions are updating the same rows concurrently.
+
+How it works?
+
+Each row in PostgreSQL has two hidden system columns:
+
+| Column | Meaning                                                      |
+| ------ | ------------------------------------------------------------ |
+| xmin   | The transaction ID that created this row version             |
+| xmax   | The transaction ID that deleted or replaced this row version |
+
+**Example**
+
+Let's say we have a products table
+
+```
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  stock INT
+);
+
+INSERT INTO products (name, stock) VALUES ('Laptop', 10);
+```
+
+Transaction 1 starts:
+
+```
+BEGIN;
+SELECT * FROM products;
+```
+
+It sees:
+
+| id  | name   | stock |
+| --- | ------ | ----- |
+| 1   | Laptop | 10    |
+
+Transaction 2 starts and updates:
+
+```
+BEGIN;
+UPDATE products SET stock = 8 WHERE id = 1;
+COMMIT;
+```
+
+Now postgres does not overwrite the old row.
+
+It creates a new version of that row:
+| id | name | stock | xmin| xmax |
+| --- | ------ | ----- | ---| ---|
+| 1 | Laptop | 10 | 100 | 101 |
+| 1 | Laptop | 10 | 101 | null |
+
+✅ Readers (old transactions) still see the old version (10)
+
+✅ New readers see the new version (8)
+
+_Note: Every transaction in PostgreSQL gets a unique transaction ID (XID) — an ever-increasing integer_
+
+Transaction 1 continues and runs again:
+
+```
+COMMIT;
+SELECT * FROM products;
+```
+
+Now it sees stock = 8 (the latest committed version).
+
+⚙️ Internally, PostgreSQL:
+
+- Uses transaction IDs (XIDs) to mark row visibility.
+
+- Keeps old row versions in the heap (table) until VACUUM cleans them up.
+
+- MVCC snapshots define what each transaction can “see.”
+
+🔒 Why MVCC is Awesome
+
+- No read locks (Readers don't block writes)
+- No dirty reads (Readers never see uncommited data)
+- Consistent snapshots (Each transcation sees a stable view of the DB)
+- High consistency (Multiple users can safely read/write at once)
+
+⚠️ Important Notes
+
+- Old row versions accumulate → PostgreSQL uses VACUUM to clean them.
+
+- Transaction ID wraparound can occur if you don’t vacuum often.
+
+- MVCC plays a key role in isolation levels (especially READ COMMITTED and REPEATABLE READ).
+
+🔍 Real-Life Analogy
+
+Imagine a Google Docs history:
+
+- Each edit creates a new version of the document.
+
+- We can open the doc as it was 5 minutes ago (snapshot).
+
+- Other users can keep editing newer versions.
+
+That’s exactly what PostgreSQL does with rows!
 
 ### Section 8: Constraints & Data Integrity
 
@@ -830,6 +976,9 @@ SERIALIZABLE isolation ensures only one booking succeeds; the other gets a rollb
 
 41. Delete duplicates from order table.
 
+````
+
 ```
 
 ```
+````
