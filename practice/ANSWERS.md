@@ -964,13 +964,85 @@ That’s exactly what PostgreSQL does with rows!
 
 36. Add a foreign key constraint from products.category_id → categories.category_id.
 
+```
+ALTER TABLE products
+ADD CONSTRAINT fk_products_category
+FOREIGN KEY (category_id)
+REFERENCES categories(category_id);
+```
+
 37. Add a unique constraint on customers(contact_name, city).
+
+```
+ALTER TABLE customers
+ADD CONSTRAINT unique_contact_city
+UNIQUE(contact_name, city);
+```
 
 38. Modify the orders table to disallow NULL customer_id.
 
+```
+ALTER TABLE orders
+ALTER COLUMN customer_id SET NOT NULL;
+```
+
 39. Add a CHECK constraint that product price > 0.
 
+```
+ALTER TABLE products
+ADD CONSTRAINT check_price_positive
+CHECK (price > 0);
+```
+
 40. Explain how deferred constraints work with an example
+
+In PostgreSQL, a deferred constraint is a constraint (like foreign key, unique, or check) that is not enforced immediately when a statement runs, but instead checked at the end of the transaction.
+
+Normally, constraints are immediate, meaning PostgreSQL checks them after each SQL statement.
+
+With deferred constraints, you can temporarily violate the constraint within a transaction as long as the final state of the data (when you commit) satisfies the constraint.
+
+ex:
+
+```
+CREATE TABLE parent (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+);
+
+CREATE TABLE child (
+    id SERIAL PRIMARY KEY,
+    parent_id INT,
+    CONSTRAINT fk_parent FOREIGN KEY (parent_id)
+        REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED
+);
+```
+
+**How it works**
+
+1. Start the transaction
+
+```
+BEGIN;
+```
+
+2. Insert a child row that references a parent row later in the transaction
+
+```
+INSERT INTO child (id, parent_id) VALUES (1, 100);
+```
+
+3. Insert the corresponding parent row later in the transaction:
+
+```
+INSERT INTO parent (id, name) VALUES (100, 'Alice');
+```
+
+4. Commit the transaction:
+
+```
+COMMIT;
+```
 
 ### SECTION 9: Extras
 
